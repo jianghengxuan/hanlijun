@@ -112,9 +112,8 @@ import {
 const Dashboard = React.lazy(() => import('./views/Dashboard'));
 const WasteDatabase = React.lazy(() => import('./views/WasteDatabase'));
 const WasteDatabaseDetail = React.lazy(() => import('./views/WasteDatabaseDetail'));
-const Assessment = React.lazy(() => import('./views/Assessment'));
 const EnvironmentalRisk = React.lazy(() => import('./views/EnvironmentalRisk'));
-const CostBenefit = React.lazy(() => import('./views/CostBenefit'));
+const ROIAssessment = React.lazy(() => import('./views/ROIAssessment'));
 const CostPotentialAssessment = React.lazy(() => import('./views/CostPotentialAssessment'));
 
 // Fix: Use React.FC to define the component type, which allows standard React props like 'key' to be passed during list rendering
@@ -179,6 +178,7 @@ const Navigation = () => {
             to="/cost-potential" 
             active={location.pathname === "/cost-potential"}
           />
+
         </nav>
 
         <div className="absolute bottom-10 left-6 right-6 p-4 bg-slate-800 rounded-xl border border-slate-700" role="complementary">
@@ -246,10 +246,10 @@ export default function App() {
                     <Routes>
                       <Route path="/database" element={<WasteDatabase />} />
                       <Route path="/database/:id" element={<WasteDatabaseDetail />} />
-                      <Route path="/assessment" element={<Assessment />} />
                       <Route path="/risk" element={<EnvironmentalRisk />} />
-                      <Route path="/cost" element={<CostBenefit />} />
+                      <Route path="/cost" element={<ROIAssessment />} />
                       <Route path="/cost-potential" element={<CostPotentialAssessment />} />
+                      {/* <Route path="/roi-assessment" element={<ROIAssessment />} /> */}
                     </Routes>
                   </div>
                 </main>

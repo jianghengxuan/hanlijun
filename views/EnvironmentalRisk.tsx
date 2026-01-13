@@ -38,6 +38,18 @@ export default function EnvironmentalRisk() {
   const [videoLayout, setVideoLayout] = useState(4);
   const [isPlaying, setIsPlaying] = useState(true);
   
+  // 折叠面板状态管理
+  const [expandedPanels, setExpandedPanels] = useState({
+    dashboard: true,
+    video: true,
+    map: true,
+    trends: true,
+    alerts: true,
+    devices: true,
+    risk: true,
+    progress: true
+  });
+  
   // API数据状态
   const [dashboardData, setDashboardData] = useState<DashboardItem[]>([]);
   const [videoCameras, setVideoCameras] = useState<VideoCamera[]>([]);
@@ -46,6 +58,14 @@ export default function EnvironmentalRisk() {
   const [deviceStatusData, setDeviceStatusData] = useState<DeviceStatus[]>([]);
   const [riskSources, setRiskSources] = useState<RiskSource[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // 切换面板折叠状态
+  const togglePanel = (panel: keyof typeof expandedPanels) => {
+    setExpandedPanels(prev => ({
+      ...prev,
+      [panel]: !prev[panel]
+    }));
+  };
 
   // 实时更新时间
   useEffect(() => {
@@ -238,70 +258,85 @@ export default function EnvironmentalRisk() {
               <BarChart2 size={18} className="mr-2 text-[#0EA5E9]" />
               核心指标仪表盘
             </h3>
-            <button className="text-sm px-3 py-1 bg-[#1E3A5F] rounded-lg border border-[#334155] hover:bg-[#0EA5E9] transition-colors flex items-center">
-              <Settings size={14} className="mr-1" />
-              配置指标
-            </button>
+            <div className="flex items-center space-x-2">
+              <button 
+                className="p-1.5 rounded-lg hover:bg-[#0EA5E9] transition-colors" 
+                onClick={() => togglePanel('dashboard')}
+                title={expandedPanels.dashboard ? '收起' : '展开'}
+              >
+                {expandedPanels.dashboard ? (
+                  <ArrowUpRight size={16} className="text-[#94A3B8] hover:text-white" />
+                ) : (
+                  <ArrowDownRight size={16} className="text-[#94A3B8] hover:text-white" />
+                )}
+              </button>
+              <button className="text-sm px-3 py-1 bg-[#1E3A5F] rounded-lg border border-[#334155] hover:bg-[#0EA5E9] transition-colors flex items-center">
+                <Settings size={14} className="mr-1" />
+                配置指标
+              </button>
+            </div>
           </div>
-          {loading ? (
-            <div className="grid grid-cols-2 gap-4">
-              {Array.from({ length: 8 }).map((_, index) => (
-                <div key={index} className="bg-[#1E3A5F] rounded-lg p-3 border border-[#334155] animate-pulse">
-                  <div className="h-4 bg-[#334155] rounded w-2/3 mb-2"></div>
-                  <div className="h-8 bg-[#334155] rounded w-1/2 mb-3"></div>
-                  <div className="h-1 bg-[#334155] rounded-full mb-1"></div>
-                  <div className="flex justify-between">
-                    <div className="h-3 bg-[#334155] rounded w-1/4"></div>
-                    <div className="h-3 bg-[#334155] rounded w-1/4"></div>
+          {expandedPanels.dashboard && (
+            <>            {loading ? (
+              <div className="grid grid-cols-2 gap-4">
+                {Array.from({ length: 8 }).map((_, index) => (
+                  <div key={index} className="bg-[#1E3A5F] rounded-lg p-3 border border-[#334155] animate-pulse">
+                    <div className="h-4 bg-[#334155] rounded w-2/3 mb-2"></div>
+                    <div className="h-8 bg-[#334155] rounded w-1/2 mb-3"></div>
+                    <div className="h-1 bg-[#334155] rounded-full mb-1"></div>
+                    <div className="flex justify-between">
+                      <div className="h-3 bg-[#334155] rounded w-1/4"></div>
+                      <div className="h-3 bg-[#334155] rounded w-1/4"></div>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4">
-              {dashboardData.map((item, index) => {
-                const getStatusColor = () => {
-                  switch (item.status) {
-                    case 'normal': return '#10B981';
-                    case 'warning': return '#F59E0B';
-                    case 'danger': return '#EF4444';
-                    default: return '#0EA5E9';
-                  }
-                };
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {dashboardData.map((item, index) => {
+                  const getStatusColor = () => {
+                    switch (item.status) {
+                      case 'normal': return '#10B981';
+                      case 'warning': return '#F59E0B';
+                      case 'danger': return '#EF4444';
+                      default: return '#0EA5E9';
+                    }
+                  };
 
-                return (
-                  <div 
-                    key={index} 
-                    className="bg-[#1E3A5F] rounded-lg p-3 border border-[#334155] hover:border-[#0EA5E9] transition-all cursor-pointer"
-                    title="点击查看详情"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="text-sm text-[#94A3B8]">{item.name}</div>
-                        <div className="text-2xl font-bold mt-1" style={{ color: getStatusColor() }}>
-                          {item.value}
-                          <span className="text-sm ml-1">{item.unit}</span>
+                  return (
+                    <div 
+                      key={index} 
+                      className="bg-[#1E3A5F] rounded-lg p-3 border border-[#334155] hover:border-[#0EA5E9] transition-all cursor-pointer"
+                      title="点击查看详情"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="text-sm text-[#94A3B8]">{item.name}</div>
+                          <div className="text-2xl font-bold mt-1" style={{ color: getStatusColor() }}>
+                            {item.value}
+                            <span className="text-sm ml-1">{item.unit}</span>
+                          </div>
                         </div>
+                        <div className={`w-2 h-2 rounded-full animate-pulse`} style={{ backgroundColor: getStatusColor() }}></div>
                       </div>
-                      <div className={`w-2 h-2 rounded-full animate-pulse`} style={{ backgroundColor: getStatusColor() }}></div>
+                      <div className="mt-3 h-1 bg-[#334155] rounded-full overflow-hidden">
+                        <div 
+                          className="h-full rounded-full transition-all duration-300" 
+                          style={{
+                            width: `${((item.value - item.min) / (item.max - item.min)) * 100}%`,
+                            backgroundColor: getStatusColor()
+                          }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between mt-1 text-xs text-[#94A3B8]">
+                        <span>{item.min}{item.unit}</span>
+                        <span>{item.max}{item.unit}</span>
+                      </div>
                     </div>
-                    <div className="mt-3 h-1 bg-[#334155] rounded-full overflow-hidden">
-                      <div 
-                        className="h-full rounded-full transition-all duration-300" 
-                        style={{
-                          width: `${((item.value - item.min) / (item.max - item.min)) * 100}%`,
-                          backgroundColor: getStatusColor()
-                        }}
-                      ></div>
-                    </div>
-                    <div className="flex justify-between mt-1 text-xs text-[#94A3B8]">
-                      <span>{item.min}{item.unit}</span>
-                      <span>{item.max}{item.unit}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}</>
           )}
         </div>
 
@@ -313,6 +348,17 @@ export default function EnvironmentalRisk() {
               多视频监控窗口
             </h3>
             <div className="flex items-center space-x-3">
+              <button 
+                className="p-1.5 rounded-lg hover:bg-[#0EA5E9] transition-colors" 
+                onClick={() => togglePanel('video')}
+                title={expandedPanels.video ? '收起' : '展开'}
+              >
+                {expandedPanels.video ? (
+                  <ArrowUpRight size={16} className="text-[#94A3B8] hover:text-white" />
+                ) : (
+                  <ArrowDownRight size={16} className="text-[#94A3B8] hover:text-white" />
+                )}
+              </button>
               <button 
                 className={`px-3 py-1 text-sm rounded-lg border transition-colors ${videoLayout === 4 ? 'bg-[#0EA5E9] text-white' : 'bg-[#1E3A5F] border-[#334155] hover:bg-[#0EA5E9]'}`}
                 onClick={() => handleVideoLayoutChange(4)}
@@ -354,43 +400,45 @@ export default function EnvironmentalRisk() {
               </div>
             </div>
           </div>
-          {loading ? (
-            <div className={`grid ${videoLayout === 4 ? 'grid-cols-2' : videoLayout === 9 ? 'grid-cols-3' : 'grid-cols-4'} gap-3`}>
-              {Array.from({ length: videoLayout }).map((_, index) => (
-                <div key={index} className="relative bg-black rounded-lg overflow-hidden animate-pulse">
-                  <div className="aspect-video bg-gradient-to-br from-[#1E3A5F] to-[#162D4A]"></div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className={`grid ${videoLayout === 4 ? 'grid-cols-2' : videoLayout === 9 ? 'grid-cols-3' : 'grid-cols-4'} gap-3`}>
-              {videoCameras.slice(0, videoLayout).map((camera) => (
-                <div key={camera.id} className="relative bg-black rounded-lg overflow-hidden group">
-                  <div className="aspect-video bg-gradient-to-br from-[#1E3A5F] to-[#162D4A] flex items-center justify-center">
-                    <Video size={48} className="text-[#64748B]" />
+          {expandedPanels.video && (
+            <>            {loading ? (
+              <div className={`grid ${videoLayout === 4 ? 'grid-cols-2' : videoLayout === 9 ? 'grid-cols-3' : 'grid-cols-4'} gap-3`}>
+                {Array.from({ length: videoLayout }).map((_, index) => (
+                  <div key={index} className="relative bg-black rounded-lg overflow-hidden animate-pulse">
+                    <div className="aspect-video bg-gradient-to-br from-[#1E3A5F] to-[#162D4A]"></div>
                   </div>
-                  <div className="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded text-xs">
-                    {camera.name} - {camera.location}
+                ))}
+              </div>
+            ) : (
+              <div className={`grid ${videoLayout === 4 ? 'grid-cols-2' : videoLayout === 9 ? 'grid-cols-3' : 'grid-cols-4'} gap-3`}>
+                {videoCameras.slice(0, videoLayout).map((camera) => (
+                  <div key={camera.id} className="relative bg-black rounded-lg overflow-hidden group">
+                    <div className="aspect-video bg-gradient-to-br from-[#1E3A5F] to-[#162D4A] flex items-center justify-center">
+                      <Video size={48} className="text-[#64748B]" />
+                    </div>
+                    <div className="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded text-xs">
+                      {camera.name} - {camera.location}
+                    </div>
+                    <div className="absolute top-2 right-2 bg-black/70 px-2 py-1 rounded text-xs">
+                      {formatTime(currentTime)}
+                    </div>
+                    <div className="absolute bottom-2 left-2 bg-black/70 px-2 py-1 rounded text-xs flex items-center">
+                      <span className={`w-2 h-2 rounded-full mr-1 ${camera.status === 'online' ? 'bg-[#10B981] animate-pulse' : 'bg-[#EF4444]'}`}></span>
+                      {camera.status === 'online' ? '在线' : '离线'}
+                    </div>
+                    {/* 悬停控制按钮 */}
+                    <div className="absolute bottom-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button className="p-1.5 bg-black/70 rounded hover:bg-[#0EA5E9] transition-colors" title="全屏">
+                        <Fullscreen size={14} />
+                      </button>
+                      <button className="p-1.5 bg-black/70 rounded hover:bg-[#0EA5E9] transition-colors" title="截图">
+                        <Camera size={14} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="absolute top-2 right-2 bg-black/70 px-2 py-1 rounded text-xs">
-                    {formatTime(currentTime)}
-                  </div>
-                  <div className="absolute bottom-2 left-2 bg-black/70 px-2 py-1 rounded text-xs flex items-center">
-                    <span className={`w-2 h-2 rounded-full mr-1 ${camera.status === 'online' ? 'bg-[#10B981] animate-pulse' : 'bg-[#EF4444]'}`}></span>
-                    {camera.status === 'online' ? '在线' : '离线'}
-                  </div>
-                  {/* 悬停控制按钮 */}
-                  <div className="absolute bottom-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-1.5 bg-black/70 rounded hover:bg-[#0EA5E9] transition-colors" title="全屏">
-                      <Fullscreen size={14} />
-                    </button>
-                    <button className="p-1.5 bg-black/70 rounded hover:bg-[#0EA5E9] transition-colors" title="截图">
-                      <Camera size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}</>
           )}
         </div>
 
@@ -402,6 +450,17 @@ export default function EnvironmentalRisk() {
               地理信息与监测点地图
             </h3>
             <div className="flex items-center space-x-3">
+              <button 
+                className="p-1.5 rounded-lg hover:bg-[#0EA5E9] transition-colors" 
+                onClick={() => togglePanel('map')}
+                title={expandedPanels.map ? '收起' : '展开'}
+              >
+                {expandedPanels.map ? (
+                  <ArrowUpRight size={16} className="text-[#94A3B8] hover:text-white" />
+                ) : (
+                  <ArrowDownRight size={16} className="text-[#94A3B8] hover:text-white" />
+                )}
+              </button>
               <button className="px-3 py-1 bg-[#1E3A5F] text-sm rounded-lg border border-[#334155] hover:bg-[#0EA5E9] transition-colors">
                 卫星图
               </button>
@@ -410,13 +469,15 @@ export default function EnvironmentalRisk() {
               </button>
             </div>
           </div>
-          <div className="w-full h-full min-h-[300px] bg-gradient-to-br from-[#1E3A5F] to-[#162D4A] rounded-lg flex items-center justify-center">
-            <MapPin size={64} className="text-[#64748B]" />
-            <div className="absolute text-center text-[#94A3B8]">
-              GIS地图组件
-              <div className="text-xs mt-1">显示项目区域地图和监测点分布</div>
+          {expandedPanels.map && (
+            <div className="w-full h-full min-h-[300px] bg-gradient-to-br from-[#1E3A5F] to-[#162D4A] rounded-lg flex items-center justify-center">
+              <MapPin size={64} className="text-[#64748B]" />
+              <div className="absolute text-center text-[#94A3B8]">
+                GIS地图组件
+                <div className="text-xs mt-1">显示项目区域地图和监测点分布</div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* 实时数据趋势图 */}
@@ -427,6 +488,17 @@ export default function EnvironmentalRisk() {
               实时数据趋势图
             </h3>
             <div className="flex items-center space-x-3">
+              <button 
+                className="p-1.5 rounded-lg hover:bg-[#0EA5E9] transition-colors" 
+                onClick={() => togglePanel('trends')}
+                title={expandedPanels.trends ? '收起' : '展开'}
+              >
+                {expandedPanels.trends ? (
+                  <ArrowUpRight size={16} className="text-[#94A3B8] hover:text-white" />
+                ) : (
+                  <ArrowDownRight size={16} className="text-[#94A3B8] hover:text-white" />
+                )}
+              </button>
               {[1, 7, 30].map((days) => (
                 <button 
                   key={days}
@@ -444,7 +516,8 @@ export default function EnvironmentalRisk() {
               </button>
             </div>
           </div>
-          {loading ? (
+          {expandedPanels.trends && (
+            <>          {loading ? (
             <div className="h-[300px] bg-[#1E3A5F] rounded-lg border border-[#334155] animate-pulse flex items-center justify-center">
               <div className="text-[#94A3B8]">加载数据中...</div>
             </div>
@@ -475,6 +548,7 @@ export default function EnvironmentalRisk() {
                 </LineChart>
               </ResponsiveContainer>
             </div>
+          )}</>
           )}
         </div>
 
@@ -485,12 +559,26 @@ export default function EnvironmentalRisk() {
               <Bell size={18} className="mr-2 text-[#0EA5E9]" />
               预警与事件中心
             </h3>
-            <div className="text-sm text-[#F59E0B] flex items-center">
-              <AlertTriangle size={16} className="mr-1" />
-              {alertsData.filter(a => a.status === '待处理').length}个未处理预警
+            <div className="flex items-center space-x-2">
+              <button 
+                className="p-1.5 rounded-lg hover:bg-[#0EA5E9] transition-colors" 
+                onClick={() => togglePanel('alerts')}
+                title={expandedPanels.alerts ? '收起' : '展开'}
+              >
+                {expandedPanels.alerts ? (
+                  <ArrowUpRight size={16} className="text-[#94A3B8] hover:text-white" />
+                ) : (
+                  <ArrowDownRight size={16} className="text-[#94A3B8] hover:text-white" />
+                )}
+              </button>
+              <div className="text-sm text-[#F59E0B] flex items-center">
+                <AlertTriangle size={16} className="mr-1" />
+                {alertsData.filter(a => a.status === '待处理').length}个未处理预警
+              </div>
             </div>
           </div>
-          <div className="mb-3">
+          {expandedPanels.alerts && (
+            <>          <div className="mb-3">
             <div className="flex space-x-2">
               {['实时预警', '今日事件', '处理中', '已关闭'].map((tab) => (
                 <button 
@@ -589,6 +677,7 @@ export default function EnvironmentalRisk() {
                 );
               })}
             </div>
+          )}</>
           )}
         </div>
 
@@ -599,11 +688,25 @@ export default function EnvironmentalRisk() {
               <Server size={18} className="mr-2 text-[#0EA5E9]" />
               设备状态监控
             </h3>
-            <div className="text-sm">
-              在线率: <span className="font-bold text-[#10B981]">{Math.round((deviceStatusData.filter(d => d.status === 'online').length / deviceStatusData.length) * 100)}%</span>
+            <div className="flex items-center space-x-2">
+              <button 
+                className="p-1.5 rounded-lg hover:bg-[#0EA5E9] transition-colors" 
+                onClick={() => togglePanel('devices')}
+                title={expandedPanels.devices ? '收起' : '展开'}
+              >
+                {expandedPanels.devices ? (
+                  <ArrowUpRight size={16} className="text-[#94A3B8] hover:text-white" />
+                ) : (
+                  <ArrowDownRight size={16} className="text-[#94A3B8] hover:text-white" />
+                )}
+              </button>
+              <div className="text-sm">
+                在线率: <span className="font-bold text-[#10B981]">{Math.round((deviceStatusData.filter(d => d.status === 'online').length / deviceStatusData.length) * 100)}%</span>
+              </div>
             </div>
           </div>
-          {loading ? (
+          {expandedPanels.devices && (
+            <>          {loading ? (
             <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2">
               {Array.from({ length: 5 }).map((_, index) => (
                 <div key={index} className="bg-[#1E3A5F] rounded-lg p-3 border border-[#334155] animate-pulse">
@@ -710,16 +813,31 @@ export default function EnvironmentalRisk() {
                 );
               })}
             </div>
+          )}</>
           )}
         </div>
 
         {/* 环境风险评估 */}
         <div className="col-span-12 lg:col-span-4 row-span-3 bg-[#162D4A] rounded-lg border border-[#334155] p-4">
-          <h3 className="text-lg font-bold mb-4 flex items-center">
-            <AlertCircle size={18} className="mr-2 text-[#0EA5E9]" />
-            环境风险评估
-          </h3>
-          {loading ? (
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold flex items-center">
+              <AlertCircle size={18} className="mr-2 text-[#0EA5E9]" />
+              环境风险评估
+            </h3>
+            <button 
+              className="p-1.5 rounded-lg hover:bg-[#0EA5E9] transition-colors" 
+              onClick={() => togglePanel('risk')}
+              title={expandedPanels.risk ? '收起' : '展开'}
+            >
+              {expandedPanels.risk ? (
+                <ArrowUpRight size={16} className="text-[#94A3B8] hover:text-white" />
+              ) : (
+                <ArrowDownRight size={16} className="text-[#94A3B8] hover:text-white" />
+              )}
+            </button>
+          </div>
+          {expandedPanels.risk && (
+            <>          {loading ? (
             <div className="space-y-4 animate-pulse">
               <div>
                 <div className="h-4 bg-[#334155] rounded w-1/3 mb-3"></div>
@@ -787,6 +905,7 @@ export default function EnvironmentalRisk() {
                 </button>
               </div>
             </div>
+          )}</>
           )}
         </div>
 
@@ -797,11 +916,25 @@ export default function EnvironmentalRisk() {
               <BarChart2 size={18} className="mr-2 text-[#0EA5E9]" />
               项目进度与统计
             </h3>
-            <button className="text-sm px-3 py-1 bg-[#1E3A5F] rounded-lg border border-[#334155] hover:bg-[#0EA5E9] transition-colors">
-              查看详细报告
-            </button>
+            <div className="flex items-center space-x-2">
+              <button 
+                className="p-1.5 rounded-lg hover:bg-[#0EA5E9] transition-colors" 
+                onClick={() => togglePanel('progress')}
+                title={expandedPanels.progress ? '收起' : '展开'}
+              >
+                {expandedPanels.progress ? (
+                  <ArrowUpRight size={16} className="text-[#94A3B8] hover:text-white" />
+                ) : (
+                  <ArrowDownRight size={16} className="text-[#94A3B8] hover:text-white" />
+                )}
+              </button>
+              <button className="text-sm px-3 py-1 bg-[#1E3A5F] rounded-lg border border-[#334155] hover:bg-[#0EA5E9] transition-colors">
+                查看详细报告
+              </button>
+            </div>
           </div>
-          {loading ? (
+          {expandedPanels.progress && (
+            <>          {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {Array.from({ length: 8 }).map((_, index) => (
                 <div key={index} className="bg-[#1E3A5F] rounded-lg p-3 border border-[#334155] animate-pulse">
@@ -844,6 +977,7 @@ export default function EnvironmentalRisk() {
                 </div>
               ))}
             </div>
+          )}</>
           )}
         </div>
       </div>

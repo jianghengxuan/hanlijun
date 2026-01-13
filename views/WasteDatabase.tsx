@@ -20,13 +20,10 @@ export default function WasteDatabase() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(true);
-  const [isContextPanelOpen, setIsContextPanelOpen] = useState(true);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [sortConfig, setSortConfig] = useState<{ key: keyof EnhancedWasteProperty | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
-  const [selectedItem, setSelectedItem] = useState<EnhancedWasteProperty | null>(null);
-  const [activeContextTab, setActiveContextTab] = useState('detail');
   const [searchProgress, setSearchProgress] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   // 搜索功能相关状态
@@ -58,6 +55,14 @@ export default function WasteDatabase() {
     phRange: [0, 14],
     organicMatterRange: [0, 100],
     heavyMetalRange: { cd: [0, 100], hg: [0, 10], as: [0, 100], pb: [0, 1000], cr: [0, 1000] },
+    biologicalPropertiesRange: {
+      aceIndex: [0, 500],
+      chaoIndex: [0, 500],
+      shannonIndex: [0, 10],
+      simpsonIndex: [0, 1],
+      microbialDiversity: [0, 100],
+      functionalGroups: [0, 20]
+    },
     toxicityLevels: [],
     startDate: '',
     endDate: '',
@@ -118,11 +123,28 @@ export default function WasteDatabase() {
       // 数据来源筛选
       const matchesDataSource = filters.dataSources.length === 0 || filters.dataSources.includes(item.dataSource);
       
+      // 生物特性筛选
+      const matchesBiological = item.biologicalProperties ? (
+        item.biologicalProperties.aceIndex >= filters.biologicalPropertiesRange.aceIndex[0] &&
+        item.biologicalProperties.aceIndex <= filters.biologicalPropertiesRange.aceIndex[1] &&
+        item.biologicalProperties.chaoIndex >= filters.biologicalPropertiesRange.chaoIndex[0] &&
+        item.biologicalProperties.chaoIndex <= filters.biologicalPropertiesRange.chaoIndex[1] &&
+        item.biologicalProperties.shannonIndex >= filters.biologicalPropertiesRange.shannonIndex[0] &&
+        item.biologicalProperties.shannonIndex <= filters.biologicalPropertiesRange.shannonIndex[1] &&
+        item.biologicalProperties.simpsonIndex >= filters.biologicalPropertiesRange.simpsonIndex[0] &&
+        item.biologicalProperties.simpsonIndex <= filters.biologicalPropertiesRange.simpsonIndex[1] &&
+        item.biologicalProperties.microbialDiversity >= filters.biologicalPropertiesRange.microbialDiversity[0] &&
+        item.biologicalProperties.microbialDiversity <= filters.biologicalPropertiesRange.microbialDiversity[1] &&
+        item.biologicalProperties.functionalGroups >= filters.biologicalPropertiesRange.functionalGroups[0] &&
+        item.biologicalProperties.functionalGroups <= filters.biologicalPropertiesRange.functionalGroups[1]
+      ) : true; // 如果没有生物特性数据，默认通过筛选
+      
       // 时间筛选（简化实现）
       const matchesDate = true;
       
       return matchesSearch && matchesDiscipline && matchesWasteType && matchesPh && 
-             matchesOrganic && matchesHeavyMetals && matchesToxicity && matchesDataSource && matchesDate;
+             matchesOrganic && matchesHeavyMetals && matchesToxicity && matchesDataSource && 
+             matchesBiological && matchesDate;
     });
   }, [data, searchTerm, filters]);
   
@@ -257,6 +279,14 @@ export default function WasteDatabase() {
       phRange: [0, 14],
       organicMatterRange: [0, 100],
       heavyMetalRange: { cd: [0, 100], hg: [0, 10], as: [0, 100], pb: [0, 1000], cr: [0, 1000] },
+      biologicalPropertiesRange: {
+        aceIndex: [0, 500],
+        chaoIndex: [0, 500],
+        shannonIndex: [0, 10],
+        simpsonIndex: [0, 1],
+        microbialDiversity: [0, 100],
+        functionalGroups: [0, 20]
+      },
       toxicityLevels: [],
       startDate: '',
       endDate: '',
@@ -302,7 +332,7 @@ export default function WasteDatabase() {
   
   // 处理查看详情
   const handleViewDetail = (item: EnhancedWasteProperty) => {
-    navigate(`/database/detail/${item.id}`);
+    navigate(`/database/${item.id}`);
   };
   
   // 处理排序变化
@@ -453,7 +483,7 @@ export default function WasteDatabase() {
         )}
         
         {/* 中央搜索结果区（自适应宽度） */}
-        <main className="flex-1 p-6 overflow-y-auto h-[calc(100vh-150px)]">
+        <main className="flex-1 p-6 overflow-y-auto h-[calc(100vh-150px)] w-full">
           {/* 搜索结果摘要栏 */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -775,203 +805,7 @@ export default function WasteDatabase() {
           )}
         </main>
         
-        {/* 右侧上下文信息面板（固定宽度350px，可拖拽调整） */}
-        {isContextPanelOpen && (
-          <aside className="w-80 bg-white border-l border-slate-200 overflow-y-auto h-[calc(100vh-150px)]">
-            {/* 面板头部 */}
-            <div className="sticky top-0 bg-white p-4 border-b border-slate-200">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-lg font-semibold text-slate-800">上下文信息</h3>
-                <button 
-                  className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-colors"
-                  onClick={() => setIsContextPanelOpen(false)}
-                  title="关闭上下文面板"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-              
-              {/* 标签切换 */}
-              <div className="flex space-x-1 overflow-x-auto">
-                {[
-                  { id: 'detail', label: '详情预览', icon: Eye },
-                  { id: 'literature', label: '相关文献', icon: BookOpen },
-                  { id: 'similar', label: '相似推荐', icon: Zap },
-                  { id: 'tools', label: '分析工具', icon: Wrench },
-                  { id: 'community', label: '专家社区', icon: Users }
-                ].map((tab) => (
-                  <button 
-                    key={tab.id}
-                    className={`flex items-center px-3 py-1.5 text-sm rounded-full transition-colors whitespace-nowrap ${activeContextTab === tab.id ? 'bg-emerald-50 text-emerald-700 font-medium' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
-                    onClick={() => setActiveContextTab(tab.id)}
-                  >
-                    <tab.icon size={14} className="mr-1" />
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            {/* 面板内容 */}
-            <div className="p-4">
-              {!selectedItem ? (
-                <div className="text-center py-12 text-slate-500">
-                  <Search size={48} className="mx-auto mb-3 opacity-50" />
-                  <p className="text-sm">选择一条数据查看详情</p>
-                </div>
-              ) : (
-                <>
-                  {/* 数据详情预览 */}
-                  {activeContextTab === 'detail' && (
-                    <div>
-                      <h4 className="text-sm font-semibold text-slate-700 mb-3">{selectedItem.name} - 详细属性</h4>
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-slate-50 p-3 rounded-lg">
-                            <div className="text-xs text-slate-500">pH值</div>
-                            <div className="text-lg font-semibold text-slate-800">{selectedItem.ph}</div>
-                          </div>
-                          <div className="bg-slate-50 p-3 rounded-lg">
-                            <div className="text-xs text-slate-500">有机质含量</div>
-                            <div className="text-lg font-semibold text-slate-800">{selectedItem.organicMatter}%</div>
-                          </div>
-                          <div className="bg-slate-50 p-3 rounded-lg">
-                            <div className="text-xs text-slate-500">含水率</div>
-                            <div className="text-lg font-semibold text-slate-800">{selectedItem.moisture}%</div>
-                          </div>
-                          <div className="bg-slate-50 p-3 rounded-lg">
-                            <div className="text-xs text-slate-500">毒性等级</div>
-                            <div className={`text-lg font-semibold ${selectedItem.toxicityLevel === '低' ? 'text-green-600' : selectedItem.toxicityLevel === '中' ? 'text-amber-600' : 'text-red-600'}`}>
-                              {selectedItem.toxicityLevel}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* 重金属含量 */}
-                        <div>
-                          <h5 className="text-xs font-semibold text-slate-700 mb-2">重金属含量 (mg/kg)</h5>
-                          <div className="space-y-2">
-                            {Object.entries(selectedItem.heavyMetals).map(([metal, value]) => (
-                              <div key={metal}>
-                                <div className="flex justify-between text-xs text-slate-600 mb-1">
-                                  <span>{metal.toUpperCase()}</span>
-                                  <span>{value}</span>
-                                </div>
-                                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                                  <div 
-                                    className="h-full bg-red-500 rounded-full" 
-                                    style={{ width: `${Math.min((value / 100) * 100, 100)}%` }}
-                                  ></div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* 相关文献与专利 */}
-                  {activeContextTab === 'literature' && (
-                    <div>
-                      <h4 className="text-sm font-semibold text-slate-700 mb-3">相关文献推荐</h4>
-                      <div className="space-y-3">
-                        {[1, 2, 3].map((i) => (
-                          <div key={i} className="bg-slate-50 p-3 rounded-lg">
-                            <h5 className="text-xs font-medium text-slate-800 mb-1 line-clamp-2">
-                              固废资源化利用的环境效益评估方法研究
-                            </h5>
-                            <div className="flex items-center text-xs text-slate-500 mb-2">
-                              <span>环境科学学报</span>
-                              <span className="mx-1">•</span>
-                              <span>IF: 4.5</span>
-                            </div>
-                            <div className="flex items-center text-xs text-emerald-600">
-                              <Zap size={12} className="mr-1" />
-                              <span>匹配度: 87%</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* 相似数据推荐 */}
-                  {activeContextTab === 'similar' && (
-                    <div>
-                      <h4 className="text-sm font-semibold text-slate-700 mb-3">相似数据推荐</h4>
-                      <div className="space-y-3">
-                        {sortedData.slice(0, 3).map((item) => (
-                          <div key={item.id} className="bg-slate-50 p-3 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer" onClick={() => setSelectedItem(item)}>
-                            <h5 className="text-xs font-medium text-slate-800 mb-1">{item.name}</h5>
-                            <div className="flex justify-between items-center">
-                              <div className="flex items-center text-xs text-slate-500">
-                                <span>{item.type}</span>
-                                <span className="mx-1">•</span>
-                                <span>pH: {item.ph}</span>
-                              </div>
-                              <div className="text-xs font-semibold text-emerald-600">92%相似</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* 分析工具建议 */}
-                  {activeContextTab === 'tools' && (
-                    <div>
-                      <h4 className="text-sm font-semibold text-slate-700 mb-3">推荐分析工具</h4>
-                      <div className="space-y-3">
-                        {[
-                          { name: '统计分析工具', icon: BarChart3, desc: '对数据进行描述性统计分析' },
-                          { name: '机器学习建模', icon: BrainCircuit, desc: '建立预测模型' },
-                          { name: '可视化设计', icon: PieChart, desc: '创建数据可视化图表' },
-                          { name: '环境风险评估', icon: AlertTriangle, desc: '评估环境风险等级' }
-                        ].map((tool, i) => (
-                          <button key={i} className="w-full flex items-center p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors text-left">
-                            <div className="p-2 bg-blue-50 rounded-lg text-blue-600 mr-3">
-                              <tool.icon size={16} />
-                            </div>
-                            <div className="flex-1">
-                              <div className="text-sm font-medium text-slate-700">{tool.name}</div>
-                              <div className="text-xs text-slate-500">{tool.desc}</div>
-                            </div>
-                            <ChevronRight size={16} className="text-slate-400" />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* 专家与社区 */}
-                  {activeContextTab === 'community' && (
-                    <div>
-                      <h4 className="text-sm font-semibold text-slate-700 mb-3">相关专家与社区</h4>
-                      <div className="space-y-3">
-                        {[1, 2, 3].map((i) => (
-                          <div key={i} className="flex items-center p-3 bg-slate-50 rounded-lg">
-                            <div className="w-10 h-10 rounded-full bg-slate-300 flex items-center justify-center text-sm font-bold text-slate-700 mr-3">
-                              张
-                            </div>
-                            <div className="flex-1">
-                              <div className="text-sm font-medium text-slate-800">张教授</div>
-                              <div className="text-xs text-slate-500">清华大学环境学院</div>
-                              <div className="text-xs text-slate-500 mt-0.5">固废资源化专家</div>
-                            </div>
-                            <button className="p-1.5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors">
-                              <MessageSquare size={16} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </aside>
-        )}
+
       </div>
     </div>
   );

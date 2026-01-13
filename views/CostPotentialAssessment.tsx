@@ -191,31 +191,33 @@ export default function CostPotentialAssessment() {
     type: string;
     amount: number;
     parameters: {
-      ph: number;
-      organicMatter: number;
+      ph: { min: number; max: number };
+      organicMatter: { min: number; max: number };
       heavyMetals: {
-        cd: number;
-        hg: number;
-        as: number;
-        pb: number;
-        cr: number;
+        cd: { min: number; max: number };
+        hg: { min: number; max: number };
+        as: { min: number; max: number };
+        pb: { min: number; max: number };
+        cr: { min: number; max: number };
       };
     };
+    useRange: boolean;
   }>({
     name: '',
     type: '',
     amount: 0,
     parameters: {
-      ph: 7.0,
-      organicMatter: 0,
+      ph: { min: 7.0, max: 7.0 },
+      organicMatter: { min: 0, max: 0 },
       heavyMetals: {
-        cd: 0,
-        hg: 0,
-        as: 0,
-        pb: 0,
-        cr: 0
+        cd: { min: 0, max: 0 },
+        hg: { min: 0, max: 0 },
+        as: { min: 0, max: 0 },
+        pb: { min: 0, max: 0 },
+        cr: { min: 0, max: 0 }
       }
-    }
+    },
+    useRange: false
   });
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [targetSetting, setTargetSetting] = useState<{
@@ -376,19 +378,28 @@ export default function CostPotentialAssessment() {
     const errors: Record<string, string> = {};
     
     // Validate pH range (0-14)
-    if (params.ph < 0 || params.ph > 14) {
+    if (params.ph.min < 0 || params.ph.max > 14) {
       errors.ph = 'pH值应在0-14之间';
+    }
+    if (params.ph.min > params.ph.max) {
+      errors.ph = 'pH最小值不能大于最大值';
     }
     
     // Validate organic matter (0-100%)
-    if (params.organicMatter < 0 || params.organicMatter > 100) {
+    if (params.organicMatter.min < 0 || params.organicMatter.max > 100) {
       errors.organicMatter = '有机质含量应在0-100%之间';
+    }
+    if (params.organicMatter.min > params.organicMatter.max) {
+      errors.organicMatter = '有机质最小值不能大于最大值';
     }
     
     // Validate heavy metals (non-negative)
     Object.entries(params.heavyMetals).forEach(([metal, value]) => {
-      if (value < 0) {
-        errors[metal] = `${metal.toUpperCase()}含量不能为负数`;
+      if (value.min < 0) {
+        errors[metal] = `${metal.toUpperCase()}最小值不能为负数`;
+      }
+      if (value.min > value.max) {
+        errors[metal] = `${metal.toUpperCase()}最小值不能大于最大值`;
       }
       // Additional validation based on common limits
       const limits: Record<string, number> = {
@@ -398,8 +409,8 @@ export default function CostPotentialAssessment() {
         pb: 100,
         cr: 150
       };
-      if (limits[metal] && value > limits[metal]) {
-        errors[metal] = `${metal.toUpperCase()}含量超过常见阈值(${limits[metal]} mg/kg)`;
+      if (limits[metal] && value.max > limits[metal]) {
+        errors[metal] = `${metal.toUpperCase()}最大值超过常见阈值(${limits[metal]} mg/kg)`;
       }
     });
     
@@ -408,30 +419,67 @@ export default function CostPotentialAssessment() {
   };
 
   // Handle manual waste input changes
-  const handleManualWasteInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleManualWasteInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, dataset } = e.target;
-    const isNumber = ['amount', 'ph', 'organicMatter', 'cd', 'hg', 'as', 'pb', 'cr'].includes(name);
+    const isNumber = ['amount', 'ph', 'organicMatter', 'cd', 'hg', 'as', 'pb', 'cr'].includes(name.split('.')[0]);
     const numValue = isNumber ? parseFloat(value) || 0 : value;
     
     if (dataset.parameterType === 'metal') {
-      setManualWasteInput(prev => ({
-        ...prev,
-        parameters: {
-          ...prev.parameters,
-          heavyMetals: {
-            ...prev.parameters.heavyMetals,
-            [name]: numValue
+      const [metalName, rangeType] = name.split('.');
+      if (rangeType === 'min' || rangeType === 'max') {
+        setManualWasteInput(prev => ({
+          ...prev,
+          parameters: {
+            ...prev.parameters,
+            heavyMetals: {
+              ...prev.parameters.heavyMetals,
+              [metalName]: {
+                ...prev.parameters.heavyMetals[metalName as keyof typeof prev.parameters.heavyMetals],
+                [rangeType]: numValue
+              }
+            }
           }
-        }
-      }));
+        }));
+      } else {
+        setManualWasteInput(prev => ({
+          ...prev,
+          parameters: {
+            ...prev.parameters,
+            heavyMetals: {
+              ...prev.parameters.heavyMetals,
+              [name]: {
+                min: numValue,
+                max: numValue
+              }
+            }
+          }
+        }));
+      }
     } else if (dataset.parameterType === 'general') {
-      setManualWasteInput(prev => ({
-        ...prev,
-        parameters: {
-          ...prev.parameters,
-          [name]: numValue
-        }
-      }));
+      const [paramName, rangeType] = name.split('.');
+      if (rangeType === 'min' || rangeType === 'max') {
+        setManualWasteInput(prev => ({
+          ...prev,
+          parameters: {
+            ...prev.parameters,
+            [paramName]: {
+              ...prev.parameters[paramName as keyof typeof prev.parameters],
+              [rangeType]: numValue
+            }
+          }
+        }));
+      } else {
+        setManualWasteInput(prev => ({
+          ...prev,
+          parameters: {
+            ...prev.parameters,
+            [name]: {
+              min: numValue,
+              max: numValue
+            }
+          }
+        }));
+      }
     } else {
       setManualWasteInput(prev => ({
         ...prev,
@@ -440,20 +488,15 @@ export default function CostPotentialAssessment() {
     }
     
     // Validate in real-time
-    const updatedParams = dataset.parameterType ? 
-      (dataset.parameterType === 'metal' ? {
-        ...manualWasteInput.parameters,
-        heavyMetals: {
-          ...manualWasteInput.parameters.heavyMetals,
-          [name]: numValue
-        }
-      } : {
-        ...manualWasteInput.parameters,
-        [name]: numValue
-      }) : 
-      manualWasteInput.parameters;
-    
-    validateWasteParameters(updatedParams);
+    validateWasteParameters(manualWasteInput.parameters);
+  };
+
+  // Toggle range input mode
+  const toggleRangeInput = () => {
+    setManualWasteInput(prev => ({
+      ...prev,
+      useRange: !prev.useRange
+    }));
   };
 
   // Handle manual waste confirmation
@@ -466,7 +509,17 @@ export default function CostPotentialAssessment() {
           name: manualWasteInput.name,
           type: manualWasteInput.type,
           amount: manualWasteInput.amount,
-          parameters: manualWasteInput.parameters,
+          parameters: {
+            ph: manualWasteInput.parameters.ph.min, // 暂时使用最小值，后续可以扩展为区间
+            organicMatter: manualWasteInput.parameters.organicMatter.min,
+            heavyMetals: {
+              cd: manualWasteInput.parameters.heavyMetals.cd.min,
+              hg: manualWasteInput.parameters.heavyMetals.hg.min,
+              as: manualWasteInput.parameters.heavyMetals.as.min,
+              pb: manualWasteInput.parameters.heavyMetals.pb.min,
+              cr: manualWasteInput.parameters.heavyMetals.cr.min
+            }
+          },
           source: '手动输入'
         };
         setSelectedWaste(newWaste);
@@ -772,9 +825,9 @@ export default function CostPotentialAssessment() {
                 <h3 className="text-2xl font-bold text-slate-800">步骤1：固废识别与目标设定</h3>
                 <p className="text-slate-500">请选择固废输入方式并设定处理目标</p>
                 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Left Column: Waste Input Area (60%) */}
-                  <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="space-y-6">
+                  {/* Waste Input Area */}
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
                     <h4 className="text-lg font-semibold text-slate-800 mb-4">固废输入区</h4>
                     
                     {/* Input Method Selection */}
@@ -850,10 +903,20 @@ export default function CostPotentialAssessment() {
                         <div className="space-y-4">
                           {/* Basic Information */}
                           <div className="space-y-3">
-                            <h5 className="text-sm font-medium text-slate-700">基本信息</h5>
+                            <div className="flex justify-between items-center">
+                              <h5 className="text-sm font-medium text-slate-700">基本信息</h5>
+                              <button
+                                className="text-xs px-3 py-1 bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 transition-colors"
+                                onClick={toggleRangeInput}
+                              >
+                                {manualWasteInput.useRange ? '切换为单值输入' : '切换为区间输入'}
+                              </button>
+                            </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                               <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">固废名称</label>
+                                <label className="block text-xs font-medium text-slate-500 mb-1" title="固废名称是指具体的固体废物名称，如铜矿尾矿、市政污泥等。请输入清晰、具体的固废名称以便系统准确识别。">
+                                  固废名称 <span className="text-red-500">*</span>
+                                </label>
                                 <input
                                   type="text"
                                   name="name"
@@ -864,28 +927,63 @@ export default function CostPotentialAssessment() {
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">固废类型</label>
-                                <input
-                                  type="text"
+                                <label className="block text-xs font-medium text-slate-500 mb-1" title="固废类型是指固体废物的分类，不同类型的固废处理方法和要求不同。一般工业固废：指工业生产过程中产生的无毒无害固体废物；危险固废：指具有毒性、腐蚀性、易燃性等危险特性的固体废物。">
+                                  固废类型 <span className="text-red-500">*</span>
+                                </label>
+                                <select
                                   name="type"
                                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
-                                  placeholder="例如：尾矿"
                                   value={manualWasteInput.type}
                                   onChange={handleManualWasteInputChange}
-                                />
+                                >
+                                  <option value="">请选择固废类型</option>
+                                  <option value="一般工业固废">一般工业固废</option>
+                                  <option value="危险固废">危险固废</option>
+                                  <option value="农业废弃物">农业废弃物</option>
+                                  <option value="市政污泥">市政污泥</option>
+                                  <option value="尾矿">尾矿</option>
+                                  <option value="其他">其他</option>
+                                </select>
                               </div>
                               <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">产生量 (吨)</label>
-                                <input
-                                  type="number"
-                                  name="amount"
-                                  min="0"
-                                  step="1"
-                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
-                                  placeholder="例如：1000"
-                                  value={manualWasteInput.amount}
-                                  onChange={handleManualWasteInputChange}
-                                />
+                                <label className="block text-xs font-medium text-slate-500 mb-1" title="产生量是指需要处理的固体废物总量，单位为吨。">
+                                  产生量 (吨) <span className="text-red-500">*</span>
+                                </label>
+                                {manualWasteInput.useRange ? (
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <input
+                                      type="number"
+                                      name="amount.min"
+                                      min="0"
+                                      step="1"
+                                      className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                                      placeholder="最小值"
+                                      value={manualWasteInput.amount}
+                                      onChange={handleManualWasteInputChange}
+                                    />
+                                    <input
+                                      type="number"
+                                      name="amount.max"
+                                      min="0"
+                                      step="1"
+                                      className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                                      placeholder="最大值"
+                                      value={manualWasteInput.amount}
+                                      onChange={handleManualWasteInputChange}
+                                    />
+                                  </div>
+                                ) : (
+                                  <input
+                                    type="number"
+                                    name="amount"
+                                    min="0"
+                                    step="1"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                                    placeholder="例如：1000"
+                                    value={manualWasteInput.amount}
+                                    onChange={handleManualWasteInputChange}
+                                  />
+                                )}
                               </div>
                             </div>
                           </div>
@@ -895,40 +993,102 @@ export default function CostPotentialAssessment() {
                             <h5 className="text-sm font-medium text-slate-700">基本参数</h5>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">pH值</label>
+                                <label className="block text-xs font-medium text-slate-500 mb-1" title="pH值是衡量固废酸碱性的指标，范围为0-14。pH值会影响固废的处理方式和资源化利用途径。">
+                                  pH值 <span className="text-gray-400">(选填，默认：7.0)</span>
+                                </label>
                                 <div className="relative">
-                                  <input
-                                    type="number"
-                                    name="ph"
-                                    min="0"
-                                    max="14"
-                                    step="0.1"
-                                    data-parameter-type="general"
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
-                                    placeholder="0-14"
-                                    value={manualWasteInput.parameters.ph}
-                                    onChange={handleManualWasteInputChange}
-                                  />
+                                  {manualWasteInput.useRange ? (
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <input
+                                        type="number"
+                                        name="ph.min"
+                                        min="0"
+                                        max="14"
+                                        step="0.1"
+                                        data-parameter-type="general"
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                                        placeholder="最小值"
+                                        value={manualWasteInput.parameters.ph.min}
+                                        onChange={handleManualWasteInputChange}
+                                      />
+                                      <input
+                                        type="number"
+                                        name="ph.max"
+                                        min="0"
+                                        max="14"
+                                        step="0.1"
+                                        data-parameter-type="general"
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                                        placeholder="最大值"
+                                        value={manualWasteInput.parameters.ph.max}
+                                        onChange={handleManualWasteInputChange}
+                                      />
+                                    </div>
+                                  ) : (
+                                    <input
+                                      type="number"
+                                      name="ph"
+                                      min="0"
+                                      max="14"
+                                      step="0.1"
+                                      data-parameter-type="general"
+                                      className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                                      placeholder="0-14"
+                                      value={manualWasteInput.parameters.ph.min}
+                                      onChange={handleManualWasteInputChange}
+                                    />
+                                  )}
                                   {validationErrors.ph && (
                                     <p className="text-xs text-red-500 mt-1">{validationErrors.ph}</p>
                                   )}
                                 </div>
                               </div>
                               <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">有机质含量 (%)</label>
+                                <label className="block text-xs font-medium text-slate-500 mb-1" title="有机质含量是指固废中有机物质的百分比，有机质含量越高，越有利于土壤改良和植物生长。">
+                                  有机质含量 (%) <span className="text-gray-400">(选填，默认：0)</span>
+                                </label>
                                 <div className="relative">
-                                  <input
-                                    type="number"
-                                    name="organicMatter"
-                                    min="0"
-                                    max="100"
-                                    step="0.1"
-                                    data-parameter-type="general"
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
-                                    placeholder="0-100"
-                                    value={manualWasteInput.parameters.organicMatter}
-                                    onChange={handleManualWasteInputChange}
-                                  />
+                                  {manualWasteInput.useRange ? (
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <input
+                                        type="number"
+                                        name="organicMatter.min"
+                                        min="0"
+                                        max="100"
+                                        step="0.1"
+                                        data-parameter-type="general"
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                                        placeholder="最小值"
+                                        value={manualWasteInput.parameters.organicMatter.min}
+                                        onChange={handleManualWasteInputChange}
+                                      />
+                                      <input
+                                        type="number"
+                                        name="organicMatter.max"
+                                        min="0"
+                                        max="100"
+                                        step="0.1"
+                                        data-parameter-type="general"
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                                        placeholder="最大值"
+                                        value={manualWasteInput.parameters.organicMatter.max}
+                                        onChange={handleManualWasteInputChange}
+                                      />
+                                    </div>
+                                  ) : (
+                                    <input
+                                      type="number"
+                                      name="organicMatter"
+                                      min="0"
+                                      max="100"
+                                      step="0.1"
+                                      data-parameter-type="general"
+                                      className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                                      placeholder="0-100"
+                                      value={manualWasteInput.parameters.organicMatter.min}
+                                      onChange={handleManualWasteInputChange}
+                                    />
+                                  )}
                                   {validationErrors.organicMatter && (
                                     <p className="text-xs text-red-500 mt-1">{validationErrors.organicMatter}</p>
                                   )}
@@ -939,29 +1099,60 @@ export default function CostPotentialAssessment() {
                           
                           {/* Heavy Metals */}
                           <div className="space-y-3">
-                            <h5 className="text-sm font-medium text-slate-700">重金属含量 (mg/kg)</h5>
+                            <h5 className="text-sm font-medium text-slate-700" title="重金属含量指固废中重金属的全量（总含量），单位为mg/kg。本系统支持输入全量数据，用于评估固废的环境风险和资源化利用潜力。">
+                              重金属含量 (mg/kg) <span className="text-gray-400">(选填，默认：0，全量)</span>
+                            </h5>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                               {[
-                                { name: 'cd', label: 'Cd' },
-                                { name: 'hg', label: 'Hg' },
-                                { name: 'as', label: 'As' },
-                                { name: 'pb', label: 'Pb' },
-                                { name: 'cr', label: 'Cr' }
+                                { name: 'cd', label: 'Cd', desc: '镉是一种有毒重金属，过量会对人体和环境造成严重危害。本系统使用全量数据进行评估。' },
+                                { name: 'hg', label: 'Hg', desc: '汞是一种剧毒重金属，具有强挥发性和生物富集性。本系统使用全量数据进行评估。' },
+                                { name: 'as', label: 'As', desc: '砷是一种类金属元素，过量会导致慢性中毒和癌症。本系统使用全量数据进行评估。' },
+                                { name: 'pb', label: 'Pb', desc: '铅是一种有毒重金属，会影响人体神经系统和智力发育。本系统使用全量数据进行评估。' },
+                                { name: 'cr', label: 'Cr', desc: '铬是一种重金属元素，六价铬具有强毒性。本系统使用全量数据进行评估。' }
                               ].map(metal => (
                                 <div key={metal.name}>
-                                  <label className="block text-xs font-medium text-slate-500 mb-1">{metal.label}</label>
+                                  <label className="block text-xs font-medium text-slate-500 mb-1" title={metal.desc}>
+                                    {metal.label}
+                                  </label>
                                   <div className="relative">
-                                    <input
-                                      type="number"
-                                      name={metal.name}
-                                      min="0"
-                                      step="0.1"
-                                      data-parameter-type="metal"
-                                      className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
-                                      placeholder="0.0"
-                                      value={manualWasteInput.parameters.heavyMetals[metal.name as keyof typeof manualWasteInput.parameters.heavyMetals]}
-                                      onChange={handleManualWasteInputChange}
-                                    />
+                                    {manualWasteInput.useRange ? (
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <input
+                                          type="number"
+                                          name={`${metal.name}.min`}
+                                          min="0"
+                                          step="0.1"
+                                          data-parameter-type="metal"
+                                          className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                                          placeholder="最小值"
+                                          value={manualWasteInput.parameters.heavyMetals[metal.name as keyof typeof manualWasteInput.parameters.heavyMetals].min}
+                                          onChange={handleManualWasteInputChange}
+                                        />
+                                        <input
+                                          type="number"
+                                          name={`${metal.name}.max`}
+                                          min="0"
+                                          step="0.1"
+                                          data-parameter-type="metal"
+                                          className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                                          placeholder="最大值"
+                                          value={manualWasteInput.parameters.heavyMetals[metal.name as keyof typeof manualWasteInput.parameters.heavyMetals].max}
+                                          onChange={handleManualWasteInputChange}
+                                        />
+                                      </div>
+                                    ) : (
+                                      <input
+                                        type="number"
+                                        name={metal.name}
+                                        min="0"
+                                        step="0.1"
+                                        data-parameter-type="metal"
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                                        placeholder="0.0"
+                                        value={manualWasteInput.parameters.heavyMetals[metal.name as keyof typeof manualWasteInput.parameters.heavyMetals].min}
+                                        onChange={handleManualWasteInputChange}
+                                      />
+                                    )}
                                     {validationErrors[metal.name] && (
                                       <p className="text-xs text-red-500 mt-1">{validationErrors[metal.name]}</p>
                                     )}
@@ -969,6 +1160,16 @@ export default function CostPotentialAssessment() {
                                 </div>
                               ))}
                             </div>
+                          </div>
+                          
+                          {/* Remarks Section */}
+                          <div className="space-y-3">
+                            <h5 className="text-sm font-medium text-slate-700">备注</h5>
+                            <textarea
+                              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                              rows={3}
+                              placeholder="请输入备注信息，用于分析时的参考..."
+                            ></textarea>
                           </div>
                           
                           {/* Confirm Button */}
@@ -1064,7 +1265,7 @@ export default function CostPotentialAssessment() {
                     </div>
                   </div>
                   
-                  {/* Right Column: Target Setting Area (40%) */}
+                  {/* Target Setting Area */}
                   <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
                     <h4 className="text-lg font-semibold text-slate-800 mb-4">目标设定区</h4>
                     
@@ -1092,15 +1293,18 @@ export default function CostPotentialAssessment() {
                       
                       <div className="space-y-4">
                         {[
-                          { objective: 'costControl', label: '成本控制', color: 'bg-blue-500' },
-                          { objective: 'processingSpeed', label: '处理速度', color: 'bg-green-500' },
-                          { objective: 'processingEffect', label: '处理效果', color: 'bg-purple-500' },
-                          { objective: 'longTermStability', label: '长期稳定性', color: 'bg-yellow-500' }
-                        ].map(({ objective, label, color }) => (
+                          { objective: 'costControl', label: '成本控制', color: 'bg-blue-500', recommendation: '推荐值：20-40%' },
+                          { objective: 'processingSpeed', label: '处理速度', color: 'bg-green-500', recommendation: '推荐值：15-30%' },
+                          { objective: 'processingEffect', label: '处理效果', color: 'bg-purple-500', recommendation: '推荐值：25-40%' },
+                          { objective: 'longTermStability', label: '长期稳定性', color: 'bg-yellow-500', recommendation: '推荐值：15-30%' }
+                        ].map(({ objective, label, color, recommendation }) => (
                           <div key={objective}>
                             <div className="flex justify-between items-center mb-1">
                               <span className="text-sm font-medium text-slate-700">{label}</span>
-                              <span className="text-sm font-bold text-slate-800">{targetSetting.coreObjectives[objective as keyof typeof targetSetting.coreObjectives]}%</span>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-xs text-gray-500">{recommendation}</span>
+                                <span className="text-sm font-bold text-slate-800">{targetSetting.coreObjectives[objective as keyof typeof targetSetting.coreObjectives]}%</span>
+                              </div>
                             </div>
                             <input
                               type="range"
@@ -1147,17 +1351,18 @@ export default function CostPotentialAssessment() {
                         </div>
                         
                         <div>
-                          <label className="block text-xs font-medium text-slate-500 mb-1">场地条件</label>
+                          <label className="block text-xs font-medium text-slate-500 mb-1" title="场地条件是成本核算的重要因素，不同场地条件会影响处理设备、运输成本和施工难度。">场地条件 <span className="text-gray-400">(影响成本核算)</span></label>
                           <select
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
                             value={targetSetting.constraints.siteConditions}
                             onChange={(e) => handleConstraintChange('siteConditions', e.target.value)}
                           >
                             <option value="">请选择</option>
-                            <option value="室内">室内</option>
-                            <option value="室外">室外</option>
-                            <option value="半室内">半室内</option>
+                            <option value="室内">室内 - 适合精细化处理，成本较高</option>
+                            <option value="室外">室外 - 适合大规模处理，成本较低</option>
+                            <option value="半室内">半室内 - 兼顾两者优点，成本中等</option>
                           </select>
+                          <p className="text-xs text-gray-500 mt-1">场地条件是成本核算的重要因素，会影响处理设备选型、运输成本和施工难度。</p>
                         </div>
                         
                         <div className="flex items-center">
@@ -1466,7 +1671,14 @@ export default function CostPotentialAssessment() {
                             { name: '添加比例', type: 'slider', min: 0, max: 30, value: 15, unit: '%' },
                             { name: '养护时间', type: 'slider', min: 0, max: 30, value: 14, unit: '天' },
                             { name: '含水率', type: 'slider', min: 0, max: 50, value: 25, unit: '%' },
-                            { name: '混合时间', type: 'slider', min: 0, max: 120, value: 30, unit: '分钟' }
+                            { name: '混合时间', type: 'slider', min: 0, max: 120, value: 30, unit: '分钟' },
+                            { name: '平均粒径', type: 'slider', min: 0, max: 200, value: 50, unit: 'μm' },
+                            { name: '颗粒级配', type: 'select', options: ['均匀级配', '连续级配', '间断级配'] },
+                            { name: '砂粒含量', type: 'slider', min: 0, max: 100, value: 40, unit: '%' },
+                            { name: '粉粒含量', type: 'slider', min: 0, max: 100, value: 30, unit: '%' },
+                            { name: '粘粒含量', type: 'slider', min: 0, max: 100, value: 30, unit: '%' },
+                            { name: '养护温度', type: 'slider', min: 0, max: 80, value: 25, unit: '°C' },
+                            { name: '反应温度', type: 'slider', min: 0, max: 100, value: 40, unit: '°C' }
                           ].map((param, index) => (
                             <div key={index}>
                               <div className="flex justify-between items-center mb-2">

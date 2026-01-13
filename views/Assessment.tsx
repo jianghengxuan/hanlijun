@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Sparkles, ArrowRight, ShieldCheck, Zap, Info, Loader2 } from 'lucide-react';
+import { Sparkles, ArrowRight, ShieldCheck, Zap, Info, Loader2, Upload, FileText, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { getPedogenesisScheme } from '../services/geminiService';
 import { WasteProperty, WasteType } from '../types';
 
@@ -14,6 +14,82 @@ export default function Assessment() {
     organicMatter: 2.5,
     heavyMetals: { cd: 0.5, hg: 0.02, as: 10.5, pb: 15.0, cr: 20.0 }
   });
+  
+  // 文件上传相关状态
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [fileUploading, setFileUploading] = useState(false);
+  const [parsingResult, setParsingResult] = useState<any>(null);
+  const [missingParams, setMissingParams] = useState<string[]>([]);
+  const [matchedParams, setMatchedParams] = useState<{ [key: string]: any }>({});
+
+  // 处理文件上传
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setFileUploading(true);
+    setUploadedFile(file);
+    
+    // 模拟文件解析和参数匹配过程
+    try {
+      // 模拟API调用延迟
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // 模拟解析结果
+      const parsedData = {
+        name: file.name.replace(/\.[^/.]+$/, ""),
+        type: WasteType.Tailings,
+        ph: 6.5,
+        organicMatter: 3.2,
+        heavyMetals: {
+          cd: 0.6,
+          hg: 0.03,
+          as: 12.0,
+          pb: 18.0,
+          // 缺少cr参数
+        }
+      };
+      
+      // 检查缺失的参数
+      const requiredParams = ['name', 'type', 'ph', 'organicMatter', 'heavyMetals.cd', 'heavyMetals.hg', 'heavyMetals.as', 'heavyMetals.pb', 'heavyMetals.cr'];
+      const missing: string[] = [];
+      const matched: { [key: string]: any } = {};
+      
+      requiredParams.forEach(param => {
+        const value = param.split('.').reduce((obj: any, key) => obj && obj[key], parsedData as any);
+        if (value === undefined || value === null) {
+          missing.push(param);
+        } else {
+          matched[param] = value;
+        }
+      });
+      
+      setMissingParams(missing);
+      setMatchedParams(matched);
+      setParsingResult(parsedData);
+      
+      // 更新表单数据
+      setForm(prev => ({
+        ...prev,
+        ...parsedData
+      }));
+      
+    } catch (error) {
+      console.error('文件解析失败:', error);
+    } finally {
+      setFileUploading(false);
+    }
+  };
+
+  // 处理手动匹配参数
+  const handleMatchParams = () => {
+    if (parsingResult) {
+      setForm(prev => ({
+        ...prev,
+        ...parsingResult
+      }));
+    }
+  };
 
   const handleAssess = async () => {
     setLoading(true);
@@ -35,6 +111,112 @@ export default function Assessment() {
             <Zap className="text-emerald-500" size={20} />
             <span>输入评估参数</span>
           </h3>
+          
+          {/* 文件上传区域 */}
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center space-x-2">
+              <FileText size={16} className="text-blue-500" />
+              <span>上传检测报告</span>
+            </h4>
+            
+            <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-blue-500 transition-colors">
+              <input
+                type="file"
+                id="report-upload"
+                accept=".pdf,.docx,.xlsx,.csv"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              <label
+                htmlFor="report-upload"
+                className="cursor-pointer flex flex-col items-center justify-center space-y-3"
+              >
+                <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center">
+                  <Upload size={24} className="text-blue-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-700">点击上传或拖拽文件到此处</p>
+                  <p className="text-xs text-slate-400 mt-1">支持 PDF, DOCX, XLSX, CSV 格式</p>
+                </div>
+                <button
+                  type="button"
+                  className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  选择文件
+                </button>
+              </label>
+            </div>
+            
+            {/* 文件上传状态和结果 */}
+            {fileUploading && (
+              <div className="mt-4 p-3 bg-slate-50 rounded-lg flex items-center justify-center">
+                <Loader2 className="animate-spin mr-2" size={16} />
+                <span className="text-sm text-slate-600">正在解析文件...</span>
+              </div>
+            )}
+            
+            {uploadedFile && !fileUploading && (
+              <div className="mt-4 space-y-3">
+                <div className="p-3 bg-green-50 rounded-lg flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <FileText size={16} className="text-green-500" />
+                    <div>
+                      <p className="text-sm font-medium text-green-800">{uploadedFile.name}</p>
+                      <p className="text-xs text-green-600">{uploadedFile.size / 1024 / 1024.toFixed(2)} MB</p>
+                    </div>
+                  </div>
+                  <CheckCircle2 size={16} className="text-green-500" />
+                </div>
+                
+                {/* 参数匹配结果 */}
+                <div className="space-y-2">
+                  <h5 className="text-xs font-semibold text-slate-700 uppercase">参数匹配结果</h5>
+                  
+                  {/* 匹配成功的参数 */}
+                  {Object.keys(matchedParams).length > 0 && (
+                    <div className="p-3 bg-green-50 rounded-lg">
+                      <p className="text-xs font-medium text-green-700 mb-2 flex items-center space-x-1">
+                        <CheckCircle2 size={14} />
+                        <span>匹配成功 ({Object.keys(matchedParams).length})</span>
+                      </p>
+                      <ul className="text-xs text-green-800 space-y-1">
+                        {Object.entries(matchedParams).map(([param, value]) => (
+                          <li key={param} className="flex justify-between">
+                            <span>{param}</span>
+                            <span>{value}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {/* 缺失的参数 */}
+                  {missingParams.length > 0 && (
+                    <div className="p-3 bg-amber-50 rounded-lg">
+                      <p className="text-xs font-medium text-amber-700 mb-2 flex items-center space-x-1">
+                        <AlertTriangle size={14} />
+                        <span>缺失参数 ({missingParams.length})</span>
+                      </p>
+                      <ul className="text-xs text-amber-800 space-y-1">
+                        {missingParams.map((param, index) => (
+                          <li key={index}>{param}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {/* 确认匹配按钮 */}
+                  <button
+                    onClick={handleMatchParams}
+                    disabled={!parsingResult}
+                    className="w-full px-4 py-2 bg-slate-900 text-white text-sm rounded-lg hover:bg-slate-800 transition-all disabled:opacity-50"
+                  >
+                    确认匹配参数
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
           
           <div className="space-y-4">
             <div>

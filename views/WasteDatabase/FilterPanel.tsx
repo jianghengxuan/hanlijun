@@ -10,6 +10,16 @@ export type ToxicityLevel = '低' | '中' | '高' | '极高';
 // 定义数据来源
 export type DataSource = '实验室' | '现场监测' | '文献' | '其他';
 
+// 定义生物特性指数类型
+export interface BiologicalProperties {
+  aceIndex: number; // ACE指数，用于估计物种丰富度
+  chaoIndex: number; // Chao指数，用于估计物种丰富度
+  shannonIndex: number; // Shannon-Wiener指数，用于评估多样性
+  simpsonIndex: number; // Simpson指数，用于评估多样性
+  microbialDiversity: number; // 微生物多样性指数
+  functionalGroups: number; // 功能群数量
+}
+
 // 扩展WasteProperty接口
 export interface EnhancedWasteProperty {
   id: string;
@@ -31,6 +41,7 @@ export interface EnhancedWasteProperty {
   toxicityLevel: ToxicityLevel;
   dataSource: DataSource;
   location?: string;
+  biologicalProperties?: BiologicalProperties; // 生物特性
 }
 
 // 定义筛选条件类型
@@ -45,6 +56,14 @@ export interface FilterCriteria {
     as: [number, number];
     pb: [number, number];
     cr: [number, number];
+  };
+  biologicalPropertiesRange: {
+    aceIndex: [number, number];
+    chaoIndex: [number, number];
+    shannonIndex: [number, number];
+    simpsonIndex: [number, number];
+    microbialDiversity: [number, number];
+    functionalGroups: [number, number];
   };
   toxicityLevels: ToxicityLevel[];
   startDate: string;
@@ -385,6 +404,73 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                 onChange={() => {/* 验证次数筛选逻辑 */}}
               />
               <span className="text-xs text-slate-600">0-10次</span>
+            </div>
+          </div>
+        </div>
+      </AccordionPanel>
+      
+      {/* 第六组: 生物特性筛选 */}
+      <AccordionPanel title="生物特性筛选" defaultOpen={false}>
+        <div className="space-y-4">
+          {/* 生物多样性指数 */}
+          <div>
+            <h5 className="text-xs font-semibold text-slate-700 mb-2">生物多样性指数</h5>
+            <div className="space-y-3">
+              {[
+                { key: 'aceIndex' as const, label: 'ACE指数', max: 500 },
+                { key: 'chaoIndex' as const, label: 'Chao指数', max: 500 },
+                { key: 'shannonIndex' as const, label: 'Shannon指数', max: 10 },
+                { key: 'simpsonIndex' as const, label: 'Simpson指数', max: 1 },
+                { key: 'microbialDiversity' as const, label: '微生物多样性', max: 100 },
+                { key: 'functionalGroups' as const, label: '功能群数量', max: 20 }
+              ].map(({ key, label, max }) => (
+                <div key={key}>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-xs text-slate-600">{label}</label>
+                    <span className="text-xs text-slate-400">({Math.floor(Math.random() * 500)})</span>
+                  </div>
+                  <div className="space-y-2">
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max={max}
+                      step="0.1"
+                      value={filters.biologicalPropertiesRange[key][0]}
+                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                      onChange={(e) => {
+                        onFilterChange({
+                          ...filters,
+                          biologicalPropertiesRange: {
+                            ...filters.biologicalPropertiesRange,
+                            [key]: [Number(e.target.value), filters.biologicalPropertiesRange[key][1]]
+                          }
+                        });
+                      }}
+                    />
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max={max}
+                      step="0.1"
+                      value={filters.biologicalPropertiesRange[key][1]}
+                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                      onChange={(e) => {
+                        onFilterChange({
+                          ...filters,
+                          biologicalPropertiesRange: {
+                            ...filters.biologicalPropertiesRange,
+                            [key]: [filters.biologicalPropertiesRange[key][0], Number(e.target.value)]
+                          }
+                        });
+                      }}
+                    />
+                    <div className="flex justify-between text-xs text-slate-500">
+                      <span>{filters.biologicalPropertiesRange[key][0]} (最小值)</span>
+                      <span>{filters.biologicalPropertiesRange[key][1]} (最大值)</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

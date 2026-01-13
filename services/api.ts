@@ -1,5 +1,5 @@
 import { WasteProperty, WasteType } from '../types';
-import { EnhancedWasteProperty } from '../views/WasteDatabase/FilterPanel';
+import { EnhancedWasteProperty, DataSource } from '../views/WasteDatabase/FilterPanel';
 
 // 模拟API延迟
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

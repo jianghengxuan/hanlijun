@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Database, 
@@ -17,11 +17,16 @@ import {
   Settings, 
   ChevronDown, 
   ChevronUp, 
+  ChevronLeft, 
+  ChevronRight,
   Clock, 
   TrendingUp, 
   ThumbsUp, 
-  Star
+  Star,
+  Leaf
 } from 'lucide-react';
+import { api } from '../services/api';
+import { EnhancedWasteProperty } from './WasteDatabase/FilterPanel';
 
 // 骨架屏组件
 const Skeleton = ({ className }: { className?: string }) => (
@@ -30,9 +35,11 @@ const Skeleton = ({ className }: { className?: string }) => (
 
 // 项目卡片组件
 const ProjectCard = ({ name, date, progress, members }: any) => {
+  const navigate = useNavigate();
+  
   const handleClick = () => {
-    // 模拟进入项目详情
-    alert(`进入项目: ${name}`);
+    // 跳转到项目详情或相关评估页面
+    navigate('/assessment');
   };
   
   return (
@@ -95,9 +102,24 @@ const ProjectCard = ({ name, date, progress, members }: any) => {
 
 // 工具按钮组件
 const ToolButton = ({ icon: Icon, label }: any) => {
+  const navigate = useNavigate();
+  
   const handleClick = () => {
-    // 模拟工具点击事件
-    alert(`打开工具: ${label}`);
+    // 根据不同工具跳转到相应页面
+    switch (label) {
+      case '高级数据检索':
+        navigate('/database');
+        break;
+      case '统计分析工具':
+      case '机器学习建模':
+      case '可视化设计':
+      case '实验设计助手':
+      case '报告生成器':
+        navigate('/assessment');
+        break;
+      default:
+        navigate('/assessment');
+    }
   };
   
   return (
@@ -136,12 +158,18 @@ const TodoItem = ({ text, completed }: any) => {
 };
 
 // 数据集表格行组件
+// 修复后的DatasetRow组件
 const DatasetRow = ({ dataset }: any) => {
   const [hovered, setHovered] = useState(false);
+  const navigate = useNavigate();
   
-  const handleView = () => {
-    // 模拟查看数据集详情
-    alert(`查看数据集: ${dataset.name}`);
+  const handleView = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/database/${dataset.name.toLowerCase().replace(/\s+/g, '-')}`);
+  };
+  
+  const handleRowClick = () => {
+    navigate('/assessment');
   };
   
   return (
@@ -149,15 +177,21 @@ const DatasetRow = ({ dataset }: any) => {
       className="hover:bg-slate-50 transition-colors cursor-pointer"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={handleRowClick}
     >
       <td className="px-4 py-3 font-medium text-slate-800">{dataset.name}</td>
-      <td className="px-4 py-3 text-slate-600">{dataset.samples}</td>
-      <td className="px-4 py-3 text-slate-600">{dataset.features}</td>
-      <td className="px-4 py-3 text-slate-500 text-sm">{dataset.updated}</td>
+      <td className="px-4 py-3 text-slate-600">1,000+</td>
+      <td className="px-4 py-3 text-slate-600">
+        {Object.keys(dataset.heavyMetals || {}).length + 3}
+      </td>
+      <td className="px-4 py-3 text-slate-500 text-sm">{dataset.timestamp}</td>
       <td className="px-4 py-3">
         <div className="flex items-center space-x-2">
           <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-            <div className="h-full bg-blue-500" style={{ width: `${dataset.quality}%` }}></div>
+            <div 
+              className="h-full bg-blue-500" 
+              style={{ width: `${dataset.quality}%` }}
+            ></div>
           </div>
           <span className="text-xs font-bold">{dataset.quality}</span>
         </div>
@@ -172,7 +206,9 @@ const DatasetRow = ({ dataset }: any) => {
       </td>
       {hovered && (
         <td className="px-4 py-3">
-          <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded">数据预览</div>
+          <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded">
+            数据预览
+          </div>
         </td>
       )}
     </tr>
@@ -181,9 +217,11 @@ const DatasetRow = ({ dataset }: any) => {
 
 // 分析节点组件
 const AnalysisNode = ({ title, status }: any) => {
+  const navigate = useNavigate();
+  
   const handleClick = () => {
-    // 模拟节点点击事件
-    alert(`进入步骤: ${title}`);
+    // 根据不同分析步骤跳转到相应页面
+    navigate('/assessment');
   };
   
   return (
@@ -193,12 +231,12 @@ const AnalysisNode = ({ title, status }: any) => {
           ? 'bg-blue-500 text-white shadow-md hover:scale-110' 
           : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:scale-110'
       }`}>
-        {title === '数据导入' && <Database size={20} />}
-        {title === '数据清洗' && <Search size={20} />}
-        {title === '特征工程' && <BarChart3 size={20} />}
-        {title === '模型选择' && <PieChart size={20} />}
-        {title === '训练验证' && <BrainCircuit size={20} />}
-        {title === '结果分析' && <BarChart3 size={20} />}
+        {title === '数据探索' && <Database size={20} />}
+        {title === '模型实验室' && <BrainCircuit size={20} />}
+        {title === '文献中心' && <BookOpen size={20} />}
+        {title === '科研协作' && <Users size={20} />}
+        {title === '报告生成' && <FileText size={20} />}
+        {title === '结果评估' && <BarChart3 size={20} />}
       </div>
       <span className="text-xs font-medium text-slate-700 text-center">{title}</span>
     </div>
@@ -311,7 +349,7 @@ const CollaborationCard = ({ user, action, time }: any) => {
 const Dashboard: React.FC = () => {
   // 折叠面板状态
   const [expandedPanels, setExpandedPanels] = useState({
-    literature: true,
+    literature: false,
     research: true,
     collaboration: true
   });
@@ -322,14 +360,39 @@ const Dashboard: React.FC = () => {
   // 动态数据状态
   const [accuracy, setAccuracy] = useState(80);
   const [featureImportance, setFeatureImportance] = useState([90, 85, 70, 60]);
+  
+  // 侧边栏状态
+  const [showRightSidebar, setShowRightSidebar] = useState(false);
+  const [showTodos, setShowTodos] = useState(false);
+  
+  // 路由导航
+  const navigate = useNavigate();
+  
+  // 切换右侧边栏显示
+  const toggleRightSidebar = () => {
+    setShowRightSidebar(!showRightSidebar);
+  };
 
-  // 模拟数据集
-  const datasets = [
-    { name: '尾矿成土化数据集', samples: '15,680', features: 24, updated: '2小时前', quality: 85 },
-    { name: '污泥特性分析数据集', samples: '8,920', features: 18, updated: '5小时前', quality: 92 },
-    { name: '秸秆还田效果数据集', samples: '3,450', features: 12, updated: '昨日', quality: 78 },
-    { name: '工业固废重金属数据集', samples: '12,340', features: 32, updated: '2023-10-24', quality: 88 },
-  ];
+  // 数据集状态
+  const [datasets, setDatasets] = useState<EnhancedWasteProperty[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // 从API获取数据集
+  useEffect(() => {
+    const fetchDatasets = async () => {
+      try {
+        setIsLoading(true);
+        const data = await api.getWasteData();
+        setDatasets(data);
+      } catch (error) {
+        console.error('获取数据集失败:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchDatasets();
+  }, []);
 
   // 模拟文献数据
   const literature = [
@@ -416,40 +479,40 @@ const Dashboard: React.FC = () => {
   return (
     <div className="bg-slate-50 min-h-screen font-sans">
       {/* 顶部导航栏 */}
-      <header className="bg-blue-800 text-white h-16 flex items-center justify-between px-6 shadow-md">
+      <header className="bg-slate-900 text-white h-16 flex items-center justify-between px-6 shadow-md">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-blue-700 rounded-lg">
-            <LayoutDashboard size={24} />
+          <div className="p-2 bg-emerald-600 rounded-lg">
+            <Leaf size={24} />
           </div>
-          <h1 className="text-xl font-bold">固废科研分析平台 v1.0</h1>
+          <h1 className="text-xl font-bold">固废资源化平台</h1>
         </div>
         
         <div className="flex items-center space-x-6">
           <nav className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-white font-medium hover:text-blue-200 transition-colors">我的工作区</Link>
-            <Link to="/database" className="text-white font-medium hover:text-blue-200 transition-colors">数据探索</Link>
-            <Link to="/assessment" className="text-white font-medium hover:text-blue-200 transition-colors">模型实验室</Link>
-            <Link to="/database" className="text-white font-medium hover:text-blue-200 transition-colors">文献中心</Link>
-            <Link to="/database" className="text-white font-medium hover:text-blue-200 transition-colors">个人中心</Link>
+            <Link to="/" className="text-white font-medium hover:text-emerald-400 transition-colors">我的工作区</Link>
+            <Link to="/database" className="text-white font-medium hover:text-emerald-400 transition-colors">数据探索</Link>
+            <Link to="/risk" className="text-white font-medium hover:text-emerald-400 transition-colors">环境安全</Link>
+            <Link to="/cost-potential" className="text-white font-medium hover:text-emerald-400 transition-colors">成本潜力</Link>
+            <Link to="/roi-assessment" className="text-white font-medium hover:text-emerald-400 transition-colors">ROI评估</Link>
           </nav>
           
           <div className="flex items-center space-x-4">
-            <button className="relative p-2 rounded-full hover:bg-blue-700 transition-colors">
+            <button className="relative p-2 rounded-full hover:bg-emerald-600 transition-colors">
               <Bell size={20} />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-400 rounded-full"></span>
             </button>
-            <button className="p-2 rounded-full hover:bg-blue-700 transition-colors">
+            <button className="p-2 rounded-full hover:bg-emerald-600 transition-colors">
               <Settings size={20} />
             </button>
             <div className="flex items-center space-x-3">
               <div className="text-right">
-                <div className="font-medium">王教授（环境工程）</div>
-                <div className="text-xs text-blue-200 flex items-center justify-end">
-                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-1"></span>
-                  在线
-                </div>
+              <div className="font-medium">王教授（环境工程）</div>
+              <div className="text-xs text-emerald-400 flex items-center justify-end">
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-1"></span>
+                在线
               </div>
-              <div className="w-10 h-10 rounded-full bg-blue-700 flex items-center justify-center font-bold">
+            </div>
+              <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center font-bold">
                 王
               </div>
             </div>
@@ -457,10 +520,23 @@ const Dashboard: React.FC = () => {
         </div>
       </header>
 
-      {/* 主要内容区 - 三栏布局 */}
+      {/* 主要内容区 */}
       <div className="flex">
         {/* 左侧功能导航区 */}
         <aside className="w-72 bg-white border-r border-slate-200 p-4 overflow-y-auto h-[calc(100vh-4rem)]">
+          {/* 快速分析工具 - 突出显示，调整到顶部，与页签对应 */}
+          <div className="mb-6 bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100 shadow-sm">
+            <h3 className="text-sm font-semibold text-blue-800 uppercase tracking-wider mb-3">平台快捷工具</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <ToolButton icon={Database} label="数据探索" />
+              <ToolButton icon={BrainCircuit} label="模型实验室" />
+              <ToolButton icon={BookOpen} label="文献中心" />
+              <ToolButton icon={FileText} label="报告生成器" />
+              <ToolButton icon={Users} label="科研协作" />
+              <ToolButton icon={Settings} label="系统设置" />
+            </div>
+          </div>
+          
           {/* 我的研究空间 */}
           <div className="mb-6">
             <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-3">我的研究空间</h3>
@@ -486,40 +562,32 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* 快速分析工具 */}
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-3">快速分析工具</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <ToolButton icon={Search} label="高级数据检索" />
-              <ToolButton icon={BarChart3} label="统计分析工具" />
-              <ToolButton icon={BrainCircuit} label="机器学习建模" />
-              <ToolButton icon={PieChart} label="可视化设计" />
-              <ToolButton icon={FlaskConical} label="实验设计助手" />
-              <ToolButton icon={FileText} label="报告生成器" />
-            </div>
-          </div>
-
-          {/* 今日待办 */}
+          {/* 今日待办 - 可切换显示 */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-3">今日待办</h3>
-            <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-              <TodoItem text="处理尾矿数据集" completed={false} />
-              <TodoItem text="训练机器学习模型" completed={false} />
-              <TodoItem text="撰写论文章节" completed={true} />
-              <TodoItem text="参加项目组会议" completed={false} />
-              <TodoItem text="回复协作邮件" completed={true} />
+            <div className="flex items-center justify-between cursor-pointer mb-3" onClick={() => setShowTodos(!showTodos)}>
+              <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider">今日待办</h3>
+              {showTodos ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </div>
+            {showTodos && (
+              <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                <TodoItem text="处理尾矿数据集" completed={false} />
+                <TodoItem text="训练机器学习模型" completed={false} />
+                <TodoItem text="撰写论文章节" completed={true} />
+                <TodoItem text="参加项目组会议" completed={false} />
+                <TodoItem text="回复协作邮件" completed={true} />
+              </div>
+            )}
           </div>
         </aside>
 
         {/* 中央工作区 */}
-        <main className="flex-1 p-6 overflow-y-auto h-[calc(100vh-4rem)]">
+        <main className={`flex-1 p-6 overflow-y-auto h-[calc(100vh-4rem)] ${showRightSidebar ? '' : 'mr-0'}`}>
           {/* 数据仪表板内容 */}
           <div>
-            {/* 我的数据集概览 */}
+            {/* 我的数据集概览 - 与研究空间整合 */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-6">
               <div className="p-4 border-b border-slate-100 flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-slate-800">我的数据集概览</h3>
+                <h3 className="text-lg font-semibold text-slate-800">数据与研究概览</h3>
                 <div className="flex items-center space-x-3">
                   <button 
                     className="px-3 py-1 bg-blue-50 text-blue-600 text-sm font-medium rounded hover:bg-blue-100 hover:border hover:border-blue-300 transition-all cursor-pointer"
@@ -549,32 +617,49 @@ const Dashboard: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {datasets.map((dataset, index) => (
-                      <DatasetRow key={index} dataset={dataset} />
-                    ))}
+                    {isLoading ? (
+                      // 加载状态
+                      <tr>
+                        <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                          加载数据中...
+                        </td>
+                      </tr>
+                    ) : datasets.length > 0 ? (
+                      // 数据展示
+                      datasets.map((dataset, index) => (
+                        <DatasetRow key={dataset.id} dataset={dataset} />
+                      ))
+                    ) : (
+                      // 无数据状态
+                      <tr>
+                        <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                          暂无数据集
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
 
-            {/* 分析工作流 */}
+            {/* 平台操作工作流 - 与页签对应 */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-6">
               <div className="p-4 border-b border-slate-100">
-                <h3 className="text-lg font-semibold text-slate-800">分析工作流</h3>
+                <h3 className="text-lg font-semibold text-slate-800">平台操作工作流</h3>
               </div>
               <div className="p-6">
                 <div className="flex items-center justify-between">
-                  <AnalysisNode title="数据导入" status="active" />
+                  <AnalysisNode title="数据探索" status="active" />
                   <div className="h-1 bg-slate-200 flex-1 mx-4"></div>
-                  <AnalysisNode title="数据清洗" status="active" />
+                  <AnalysisNode title="模型实验室" status="active" />
                   <div className="h-1 bg-slate-200 flex-1 mx-4"></div>
-                  <AnalysisNode title="特征工程" status="active" />
+                  <AnalysisNode title="文献中心" status="active" />
                   <div className="h-1 bg-slate-200 flex-1 mx-4"></div>
-                  <AnalysisNode title="模型选择" status="inactive" />
+                  <AnalysisNode title="科研协作" status="active" />
                   <div className="h-1 bg-slate-200 flex-1 mx-4"></div>
-                  <AnalysisNode title="训练验证" status="inactive" />
+                  <AnalysisNode title="报告生成" status="active" />
                   <div className="h-1 bg-slate-200 flex-1 mx-4"></div>
-                  <AnalysisNode title="结果分析" status="inactive" />
+                  <AnalysisNode title="结果评估" status="active" />
                 </div>
               </div>
             </div>
@@ -583,12 +668,22 @@ const Dashboard: React.FC = () => {
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
               <div className="p-4 border-b border-slate-100 flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-slate-800">临时分析结果</h3>
-                <button 
-                  className="px-3 py-1 bg-blue-50 text-blue-600 text-sm font-medium rounded hover:bg-blue-100 hover:border hover:border-blue-300 transition-all cursor-pointer"
-                  onClick={() => alert('导出到模型实验室')}
-                >
-                  导出到模型实验室
-                </button>
+                <div className="flex items-center space-x-3">
+                  <button 
+                    className="px-3 py-1 bg-blue-50 text-blue-600 text-sm font-medium rounded hover:bg-blue-100 hover:border hover:border-blue-300 transition-all cursor-pointer"
+                    onClick={() => alert('导出到模型实验室')}
+                  >
+                    导出到模型实验室
+                  </button>
+                  {/* 右侧边栏切换按钮 */}
+                  <button 
+                    className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors cursor-pointer"
+                    onClick={toggleRightSidebar}
+                    title={showRightSidebar ? '隐藏智能推荐' : '显示智能推荐'}
+                  >
+                    {showRightSidebar ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
+                  </button>
+                </div>
               </div>
               <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                 {loading ? (
@@ -659,62 +754,64 @@ const Dashboard: React.FC = () => {
           </div>
         </main>
 
-        {/* 右侧智能辅助区 */}
-        <aside className="w-80 bg-white border-l border-slate-200 p-4 overflow-y-auto h-[calc(100vh-4rem)]">
-          {/* 智能文献推荐 */}
-          <div className="mb-6">
-            <div 
-              className="flex items-center justify-between cursor-pointer mb-3"
-              onClick={() => togglePanel('literature')}
-            >
-              <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider">智能文献推荐</h3>
-              {expandedPanels.literature ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </div>
-            {expandedPanels.literature && (
-              <div>
-                {literature.map((item, index) => (
-                  <LiteratureCard key={index} {...item} />
-                ))}
+        {/* 右侧智能辅助区 - 可切换显示 */}
+        {showRightSidebar && (
+          <aside className="w-80 bg-white border-l border-slate-200 p-4 overflow-y-auto h-[calc(100vh-4rem)]">
+            {/* 智能文献推荐 */}
+            <div className="mb-6">
+              <div 
+                className="flex items-center justify-between cursor-pointer mb-3"
+                onClick={() => togglePanel('literature')}
+              >
+                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider">智能文献推荐</h3>
+                {expandedPanels.literature ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </div>
-            )}
-          </div>
+              {expandedPanels.literature && (
+                <div>
+                  {literature.map((item, index) => (
+                    <LiteratureCard key={index} {...item} />
+                  ))}
+                </div>
+              )}
+            </div>
 
-          {/* 相似研究分析 */}
-          <div className="mb-6">
-            <div 
-              className="flex items-center justify-between cursor-pointer mb-3"
-              onClick={() => togglePanel('research')}
-            >
-              <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider">相似研究分析</h3>
-              {expandedPanels.research ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </div>
-            {expandedPanels.research && (
-              <div>
-                {similarResearch.map((item, index) => (
-                  <SimilarResearchCard key={index} {...item} />
-                ))}
+            {/* 相似研究分析 */}
+            <div className="mb-6">
+              <div 
+                className="flex items-center justify-between cursor-pointer mb-3"
+                onClick={() => togglePanel('research')}
+              >
+                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider">相似研究分析</h3>
+                {expandedPanels.research ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </div>
-            )}
-          </div>
+              {expandedPanels.research && (
+                <div>
+                  {similarResearch.map((item, index) => (
+                    <SimilarResearchCard key={index} {...item} />
+                  ))}
+                </div>
+              )}
+            </div>
 
-          {/* 科研协作动态 */}
-          <div>
-            <div 
-              className="flex items-center justify-between cursor-pointer mb-3"
-              onClick={() => togglePanel('collaboration')}
-            >
-              <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider">科研协作动态</h3>
-              {expandedPanels.collaboration ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </div>
-            {expandedPanels.collaboration && (
-              <div>
-                {collaboration.map((item, index) => (
-                  <CollaborationCard key={index} {...item} />
-                ))}
+            {/* 科研协作动态 */}
+            <div>
+              <div 
+                className="flex items-center justify-between cursor-pointer mb-3"
+                onClick={() => togglePanel('collaboration')}
+              >
+                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider">科研协作动态</h3>
+                {expandedPanels.collaboration ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </div>
-            )}
-          </div>
-        </aside>
+              {expandedPanels.collaboration && (
+                <div>
+                  {collaboration.map((item, index) => (
+                    <CollaborationCard key={index} {...item} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </aside>
+        )}
       </div>
     </div>
   );

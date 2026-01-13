@@ -70,6 +70,91 @@ export default function CostBenefit() {
         </div>
       </div>
 
+      {/* 成本优化建议 */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+        <h3 className="text-lg font-bold text-slate-800 mb-6">成本优化建议</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* 成本降低建议 */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 text-blue-600">
+              <DollarSign size={16} />
+              <h4 className="font-semibold">降低平均利用成本</h4>
+            </div>
+            <ul className="space-y-3 text-sm text-slate-600">
+              <li className="flex items-start space-x-2">
+                <span className="text-emerald-500 mt-1">•</span>
+                <span>优化运输路线，减少运输成本（预计降低 15-20%）</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-emerald-500 mt-1">•</span>
+                <span>采用规模化处理工艺，降低单位处理成本（预计降低 10-15%）</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-emerald-500 mt-1">•</span>
+                <span>利用政策补贴，降低设备投入成本（预计降低 5-8%）</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-emerald-500 mt-1">•</span>
+                <span>优化原材料配比，减少昂贵添加剂使用（预计降低 8-12%）</span>
+              </li>
+            </ul>
+          </div>
+          
+          {/* 缩短投资回收期建议 */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 text-purple-600">
+              <ArrowUpRight size={16} />
+              <h4 className="font-semibold">缩短投资回收期</h4>
+            </div>
+            <ul className="space-y-3 text-sm text-slate-600">
+              <li className="flex items-start space-x-2">
+                <span className="text-emerald-500 mt-1">•</span>
+                <span>增加产品附加值，开发高利润产品（预计缩短 25-30%）</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-emerald-500 mt-1">•</span>
+                <span>提高生产效率，增加年产量（预计缩短 15-20%）</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-emerald-500 mt-1">•</span>
+                <span>采用分期付款或租赁设备，减少初始投资（预计缩短 10-15%）</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-emerald-500 mt-1">•</span>
+                <span>开发多元化收入来源，增加额外收益（预计缩短 10-15%）</span>
+              </li>
+            </ul>
+          </div>
+          
+          {/* 极限成本降低程序 */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 text-orange-600">
+              <Target size={16} />
+              <h4 className="font-semibold">极限成本降低程序</h4>
+            </div>
+            <ul className="space-y-3 text-sm text-slate-600">
+              <li className="flex items-start space-x-2">
+                <span className="text-emerald-500 mt-1">•</span>
+                <span>优化能源利用，采用清洁能源（预计降低 20-25%）</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-emerald-500 mt-1">•</span>
+                <span>实现自动化生产，减少人力成本（预计降低 30-35%）</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-emerald-500 mt-1">•</span>
+                <span>建立循环经济模式，回收利用副产品（预计降低 15-20%）</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-emerald-500 mt-1">•</span>
+                <span>与供应商建立长期合作关系，降低原材料采购成本（预计降低 5-10%）</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      
       <div className="bg-slate-900 rounded-3xl p-8 text-white flex flex-col md:flex-row items-center justify-between gap-8">
         <div className="max-w-xl">
           <h3 className="text-2xl font-bold mb-4">需要更详细的经济效益报告？</h3>
